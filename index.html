@@ -1,97 +1,197 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kiểm tra Mật khẩu</title>
-    <style>
-        body { font-family: sans-serif; line-height: 1.6; padding: 20px; }
-        .container { max-width: 600px; margin: auto; border: 1px solid #ccc; padding: 20px; border-radius: 8px; }
-        h2 { color: #333; }
-    </style>
+<meta charset="UTF-8">
+<title>Danh sách sinh viên</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+
+body{
+font-family: Arial;
+margin:40px;
+}
+
+table{
+border-collapse: collapse;
+width:100%;
+margin-top:20px;
+}
+
+th,td{
+border:1px solid #ccc;
+padding:8px;
+}
+
+th{
+background:#f2f2f2;
+}
+
+</style>
+
 </head>
+
 <body>
 
-<div class="container">
-    <h2>Kết quả Kiểm tra Mật khẩu</h2>
-    <div id="result"></div>
-</div>
+<h2>Danh sách sinh viên</h2>
+
+<input type="file" id="fileInput">
+
+<table id="studentTable">
+
+<thead>
+
+<tr>
+<th>STT</th>
+<th>Mã SV</th>
+<th>Họ tên</th>
+<th>Khóa</th>
+<th>Khoa</th>
+<th>Email</th>
+</tr>
+
+</thead>
+
+<tbody></tbody>
+
+</table>
 
 <script>
-    function validatePassword() {
-        let password = "";
-        let isValid = false;
 
-        while (!isValid) {
-            password = prompt("Vui lòng nhập mật khẩu của bạn:");
+// ===== Hàm bỏ dấu tiếng Việt =====
 
-            // Nếu người dùng nhấn Cancel
-            if (password === null) {
-                alert("Bạn đã hủy thao tác.");
-                return;
-            }
+function removeVietnameseTones(str){
 
-            let errors = [];
+return str
+.normalize("NFD")
+.replace(/[\u0300-\u036f]/g,"")
+.replace(/đ/g,"d")
+.replace(/Đ/g,"D")
 
-            // 1. Kiểm tra độ dài ít nhất 8 ký tự
-            if (password.length < 8) {
-                errors.push("Mật khẩu phải có ít nhất 8 ký tự.");
-            }
+}
 
-            // 2. Kiểm tra chữ cái viết hoa
-            if (!/[A-Z]/.test(password)) {
-                errors.push("Mật khẩu phải chứa ít nhất một chữ cái viết hoa (A-Z).");
-            }
+// ===== Class Student =====
 
-            // 3. Kiểm tra chữ cái viết thường
-            if (!/[a-z]/.test(password)) {
-                errors.push("Mật khẩu phải chứa ít nhất một chữ cái viết thường (a-z).");
-            }
+class Student{
 
-            // 4. Kiểm tra chữ số
-            if (!/[0-9]/.test(password)) {
-                errors.push("Mật khẩu phải chứa ít nhất một chữ số (0-9).");
-            }
+constructor(stt, studentId, fullName){
 
-            // 5. Kiểm tra ký tự đặc biệt
-            if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-                errors.push("Mật khẩu phải chứa ít nhất một ký tự đặc biệt (@, #, $, %...).");
-            }
+this.stt = stt
+this.studentId = studentId
+this.fullName = fullName
 
-            if (errors.length > 0) {
-                alert("Mật khẩu không hợp lệ:\n- " + errors.join("\n- "));
-            } else {
-                isValid = true;
-                displayStrength(password);
-            }
-        }
-    }
+}
 
-    function displayStrength(pw) {
-        let strength = "";
-        let color = "";
+getCourse(){
 
-        if (pw.length === 8) {
-            strength = "Yếu (Chỉ vừa đủ 8 ký tự)";
-            color = "orange";
-        } else if (pw.length < 12) {
-            strength = "Trung bình (Đủ điều kiện & dưới 12 ký tự)";
-            color = "blue";
-        } else {
-            strength = "Mạnh (Đủ điều kiện & từ 12 ký tự trở lên)";
-            color = "green";
-        }
+return this.studentId.substring(0,2)
 
-        const resultDiv = document.getElementById("result");
-        resultDiv.innerHTML = `
-            <p style="font-weight: bold; color: green;">Mật khẩu hợp lệ!</p>
-            <p>Độ mạnh: <span style="font-weight: bold; color: ${color};">${strength}</span></p>
-        `;
-        alert("Mật khẩu hợp lệ!\nĐộ mạnh: " + strength);
-    }
+}
 
-    // Thực thi hàm khi trang web tải xong
-    window.onload = validatePassword;
+getFaculty(){
+
+let facultyCode = this.studentId.substring(2,6)
+
+let faculty=""
+
+if (facultyCode === "A401") faculty = "Ngân hàng, Tài chính"
+else if (facultyCode === "A404") faculty = "Công nghệ thông tin & Kinh tế số"
+else if (facultyCode === "A402") faculty = "Kế toán - Kiểm toán"
+else if (facultyCode === "A407") faculty = "Kinh tế đầu tư"
+else if (facultyCode === "A405") faculty = "Quản trị kinh doanh; Kinh doanh quốc tế"
+else if (facultyCode === "A406") faculty = "Luật kinh tế"
+else if (facultyCode === "A403") faculty = "QTDL"
+else if (facultyCode === "A751") faculty = "Ngôn ngữ"
+
+return faculty
+
+}
+
+createEmail(){
+
+let name = removeVietnameseTones(this.fullName)
+.toLowerCase()
+.trim()
+
+let nameParts = name.split(/\s+/)
+
+let lastName = nameParts[nameParts.length-1]
+
+let firstLetters=""
+
+for(let i=0;i<nameParts.length-1;i++){
+firstLetters += nameParts[i][0]
+}
+
+let msvLower = this.studentId.toLowerCase()
+
+return lastName + firstLetters + "." + msvLower + "@hvnh.edu.vn"
+
+}
+
+}
+
+// ===== Đọc file Excel =====
+
+document.getElementById("fileInput").addEventListener("change",function(e){
+
+let file = e.target.files[0]
+
+let reader = new FileReader()
+
+reader.onload = function(event){
+
+let data = new Uint8Array(event.target.result)
+
+let workbook = XLSX.read(data,{type:"array"})
+
+let sheet = workbook.Sheets[workbook.SheetNames[0]]
+
+let json = XLSX.utils.sheet_to_json(sheet)
+
+displayStudents(json)
+
+}
+
+reader.readAsArrayBuffer(file)
+
+})
+
+// ===== Hiển thị bảng =====
+
+function displayStudents(data){
+
+let tbody = document.querySelector("#studentTable tbody")
+
+tbody.innerHTML=""
+
+data.forEach(row=>{
+
+let student = new Student(
+row["STT"],
+row["Mã SV"],
+row["Họ tên"]
+)
+
+let tr = document.createElement("tr")
+
+tr.innerHTML = `
+<td>${student.stt}</td>
+<td>${student.studentId}</td>
+<td>${student.fullName}</td>
+<td>${student.getCourse()}</td>
+<td>${student.getFaculty()}</td>
+<td>${student.createEmail()}</td>
+`
+
+tbody.appendChild(tr)
+
+})
+
+}
+
 </script>
 
 </body>
